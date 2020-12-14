@@ -59,7 +59,7 @@ public class TestIGArgumentsProcessor {
         String rootDir = (String)options.valueOf(ROOT_DIR_OPTIONS[0]);
         String igPath = (String)options.valueOf(IG_PATH_OPTIONS[0]);
 //        String igCanonicalBase = (String)options.valueOf(IG_CANONICAL_BASE[0]);
-        String fhirVersion = (String)options.valueOf(FHIR_VERSION_OPTIONS[0]);
+//        String fhirVersion = (String)options.valueOf(FHIR_VERSION_OPTIONS[0]);
         String testCasesPath = (String)options.valueOf(TEST_CASES_PATH_OPTIONS[0]);
         String fhirServerUri = (String)options.valueOf(FHIR_URI_OPTIONS[0]);
 
@@ -70,7 +70,7 @@ public class TestIGArgumentsProcessor {
 //        ip.igCanonicalBase = igCanonicalBase;
         ip.testCasesPath = testCasesPath;
         ip.fhirServerUri = fhirServerUri;
-        ip.fhirContext = IGProcessor.getIgFhirContext(fhirVersion);
+//        ip.fhirContext = IGProcessor.getIgFhirContext(fhirVersion);
 
         return ip;
     }

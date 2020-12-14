@@ -143,7 +143,7 @@ public class PlanDefinitionProcessor {
             } catch (IOException e) {
                 LogUtils.putException(((IBaseResource)bundle).getIdElement().getIdPart(), "Error posting to FHIR Server: " + fhirUri + ".  Bundle not posted.");
                 File dir = new File("C:\\src\\GitHub\\logs");
-                dir.mkdir();
+                dir.mkdirs();
                 IOUtils.writeBundle(bundle, dir.getAbsolutePath(), encoding, fhirContext);
             }
         }

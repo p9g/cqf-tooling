@@ -12,6 +12,7 @@ import org.opencds.cqf.tooling.common.BaseCqfmSoftwareSystemHelper;
 import org.opencds.cqf.tooling.common.CqfmSoftwareSystem;
 import org.opencds.cqf.tooling.measure.MeasureTestProcessor;
 import org.opencds.cqf.tooling.parameter.TestIGParameters;
+import org.opencds.cqf.tooling.plandefinition.PlanDefinitionTestProcessor;
 import org.opencds.cqf.tooling.utilities.*;
 
 import java.io.File;
@@ -156,8 +157,6 @@ public class IGTestProcessor extends BaseProcessor {
     }
 
     public void testIg(TestIGParameters params) {
-        fhirContext = params.fhirContext;
-
         if (params.ini != null) {
             initialize(params.ini);
         }
@@ -165,7 +164,12 @@ public class IGTestProcessor extends BaseProcessor {
             initialize(params.rootDir, params.igPath, fhirContext.getVersion().toString());
         }
 
-        CqfmSoftwareSystem testTargetSoftwareSystem =  getCqfRulerSoftwareSystem(params.fhirServerUri);
+        fhirContext = IGProcessor.getIgFhirContext(fhirVersion);
+        CqfmSoftwareSystem testTargetSoftwareSystem = null;
+
+        if (params.fhirServerUri != null) {
+            testTargetSoftwareSystem = getCqfRulerSoftwareSystem(params.fhirServerUri);
+        }
 
         System.out.println("Running IG test cases...");
 
@@ -212,7 +216,7 @@ public class IGTestProcessor extends BaseProcessor {
                     TestCaseResultSummary testCaseResult  = new TestCaseResultSummary(group.getName(), testArtifact.getName(),
                         testCaseBundle.getIdElement().toString());
                     try {
-                        System.out.println(String.format("      Starting processing of test case '%s' for %s: %s", testCaseBundle.getIdElement(), group.getName(), testArtifact.getName()));
+                        System.out.println(String.format("      \tStarting processing of test case '%s' for %s: %s", testCaseBundle.getIdElement(), group.getName(), testArtifact.getName()));
                         Parameters testResults = testProcessor.executeTest(testCaseBundle, testArtifactContentBundleMap.getValue(), params.fhirServerUri);
 
                         Boolean testPassed = false;
@@ -234,10 +238,11 @@ public class IGTestProcessor extends BaseProcessor {
 
                 System.out.println(String.format("  Done processing all test cases for %s: %s", group.getName(), testArtifact.getName()));
 
-                if (allTestArtifactTestsPassed) {
+                if (allTestArtifactTestsPassed && params.fhirServerUri != null) {
+                    CqfmSoftwareSystem finalTestTargetSoftwareSystem = testTargetSoftwareSystem;
                     List<CqfmSoftwareSystem> softwareSystems = new ArrayList<CqfmSoftwareSystem>() {
                         {
-                            add(testTargetSoftwareSystem);
+                            add(finalTestTargetSoftwareSystem);
                         }
                     };
 
@@ -293,7 +298,11 @@ public class IGTestProcessor extends BaseProcessor {
     }
 
     private String getPathForContentBundleTestArtifact(String groupName, String testArtifactName) {
-        String contentBundlePath = FilenameUtils.concat(FilenameUtils.concat(FilenameUtils.concat(getRootDir(), IGProcessor.bundlePathElement), groupName), testArtifactName);
+        String artifactGroupName = groupName;
+        if (artifactGroupName.endsWith("Tests")) {
+            artifactGroupName = artifactGroupName.substring(0, artifactGroupName.length() - "Tests".length());
+        }
+        String contentBundlePath = FilenameUtils.concat(FilenameUtils.concat(FilenameUtils.concat(getRootDir(), IGProcessor.bundlePathElement), artifactGroupName), testArtifactName);
         return contentBundlePath;
     }
 
@@ -304,6 +313,9 @@ public class IGTestProcessor extends BaseProcessor {
         switch(loweredResourceTypeName) {
             case "measure":
                 testProcessor = new MeasureTestProcessor(fhirContext);
+                break;
+            case "plandefinition":
+                testProcessor = new PlanDefinitionTestProcessor(fhirContext);
                 break;
             default:
                 // Currently unsupported/undocumented

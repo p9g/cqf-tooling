@@ -340,7 +340,7 @@ public class IOUtils
                 throw new RuntimeException("Error deleting directory: " + path + " - " + e.getMessage());
             }
         }
-        directory.mkdir();
+        directory.mkdirs();
     }
 
     public static void deleteDirectory(String path) throws IOException {

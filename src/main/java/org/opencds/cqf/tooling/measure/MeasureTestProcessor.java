@@ -18,9 +18,6 @@ import org.opencds.cqf.tooling.processor.ITestProcessor;
 
 public class MeasureTestProcessor implements ITestProcessor {
 
-    //TODO: Should probably introduce a BaseTestProcessor and this would belong there.
-    public static final String TestPassedKey  = "Test Passed";
-
     private FhirContext fhirContext;
 
     public MeasureTestProcessor(FhirContext fhirContext)

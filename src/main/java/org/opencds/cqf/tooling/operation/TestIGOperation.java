@@ -29,18 +29,18 @@ public class TestIGOperation extends Operation {
         op.execute(new String[] {
             "-TestIG",
             "-ini",
-            "/Users/Adam/Src/DBCG/connectathon/fhir401/ig.ini",
+            "D:/src/code/who-int/anc-cds/ig.ini",
             "-root-dir",
-            "/Users/Adam/Src/DBCG/connectathon/fhir401",
+            "D:/src/code/who-int/anc-cds",
 //            "-igcb",
 //            "http://fhir.org/guides/dbcg/connectathon/ImplementationGuide/fhir.dbcg.connectathon-r4",
-            "-fv",
-            "4.0.1",
+//            "-fv",
+//            "4.0.1",
             "-tcp",
-            "/Users/Adam/Src/DBCG/connectathon/fhir401/input/tests",
-            "-fs",
-            //"http://localhost:8080/cqf-ruler-r4/fhir"
-            "http://192.168.2.194:8082/cqf-ruler-r4/fhir"
+            "D:/src/code/who-int/anc-cds/input/tests",
+//            "-fs",
+//            "http://localhost:8080/cqf-ruler-r4/fhir"
+//            "http://192.168.2.194:8082/cqf-ruler-r4/fhir"
         });
     }
 }
