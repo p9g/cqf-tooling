@@ -1,6 +1,8 @@
-package org.opencds.cqf.tooling.plandefinition.adapters;
+package org.opencds.cqf.tooling.library.adapters;
 
+import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.GuidanceResponse;
+import org.opencds.cqf.tooling.library.adapters.IGuidanceResponseAdapter;
 
 public class R4GuidanceResponseAdapter implements IGuidanceResponseAdapter {
     private org.hl7.fhir.r4.model.GuidanceResponse guidanceResponse;
@@ -22,4 +24,6 @@ public class R4GuidanceResponseAdapter implements IGuidanceResponseAdapter {
         String guidanceId = guidanceRefParts[guidanceRefParts.length - 1];
         return guidanceId;
     }
+
+    public IBaseResource getGuidanceResponse() { return this.guidanceResponse; }
 }

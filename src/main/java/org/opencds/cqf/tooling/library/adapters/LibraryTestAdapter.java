@@ -1,4 +1,4 @@
-package org.opencds.cqf.tooling.plandefinition.adapters;
+package org.opencds.cqf.tooling.library.adapters;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.FhirVersionEnum;
@@ -6,25 +6,22 @@ import ca.uhn.fhir.util.BundleUtil;
 import org.apache.commons.lang.NotImplementedException;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
-import org.opencds.cqf.tooling.measure.adapters.IMeasureReportAdapter;
-import org.opencds.cqf.tooling.plandefinition.adapters.*;
 import org.opencds.cqf.tooling.utilities.IOUtils;
 
 import java.util.List;
 import java.util.Objects;
 
-public abstract class PlanDefinitionTestAdapter {
+public abstract class LibraryTestAdapter {
 
     protected String testPath;
     protected FhirContext fhirContext;
     protected IBaseResource testBundle;
     protected IGuidanceResponseAdapter expectedGuidanceAdapter;
-    protected IParameterAdapter expectedParameterAdapter;
-    protected IParameterAdapter actualParameterAdapter;
+    protected IParameterAdapter expectedParameter;
+    protected IParameterAdapter actualParameter;
+    protected IBaseResource expectedGuidanceResponse;
 
-    private IBaseResource expectedParameter;
-
-    public PlanDefinitionTestAdapter(FhirContext fhirContext, String testPath) {
+    public LibraryTestAdapter(FhirContext fhirContext, String testPath) {
         this.fhirContext = Objects.requireNonNull(fhirContext, "fhirContext can not be null.");
         Objects.requireNonNull(testPath, "testPath can not be null.");
 
@@ -35,15 +32,15 @@ public abstract class PlanDefinitionTestAdapter {
         }
 
         validateTestBundle();
-        this.expectedGuidanceAdapter = getGuidanceResponseAdapter(this.expectedParameter);
+        this.expectedGuidanceAdapter = getGuidanceResponseAdapter(this.expectedGuidanceResponse);
     }
 
-    public PlanDefinitionTestAdapter(FhirContext fhirContext, IBaseResource testBundle) {
+    public LibraryTestAdapter(FhirContext fhirContext, IBaseResource testBundle) {
         this.fhirContext = Objects.requireNonNull(fhirContext, "fhirContext can not be null.");
         this.testBundle = Objects.requireNonNull(testBundle, "testBundle can not be null.");
 
         validateTestBundle();
-        this.expectedGuidanceAdapter = getGuidanceResponseAdapter(this.expectedParameter);
+        this.expectedGuidanceAdapter = getGuidanceResponseAdapter(this.expectedGuidanceResponse);
     }
 
     protected IGuidanceResponseAdapter getGuidanceResponseAdapter(IBaseResource guidanceResponse) {
@@ -71,14 +68,17 @@ public abstract class PlanDefinitionTestAdapter {
 
         IBaseBundle bundle = (IBaseBundle)this.testBundle;
 
-        List<? extends IBaseResource> parameters = BundleUtil.toListOfResourcesOfType(this.fhirContext, bundle,
-                this.fhirContext.getResourceDefinition("Parameter").getImplementingClass());
+        List<? extends IBaseResource> guidanceResponses = BundleUtil.toListOfResourcesOfType(this.fhirContext, bundle,
+                this.fhirContext.getResourceDefinition("GuidanceResponse").getImplementingClass());
 
-        if (parameters == null || parameters.size() == 0) {
-            throw new IllegalArgumentException("Bundle is not a valid Plan Definition Test Bundle. It must contain an Input Parameters Resource.");
+        // Get Expected Result GR
+        if (guidanceResponses == null || guidanceResponses.size() == 0) {
+
+            // Expected Result GR does not exist. Generate it.
         }
-
-        this.expectedParameter = parameters.get(0);
+        else {
+            this.expectedGuidanceResponse = guidanceResponses.get(0);
+        }
     }
 
     protected abstract IParameterAdapter evaluate();
@@ -86,8 +86,10 @@ public abstract class PlanDefinitionTestAdapter {
     public abstract IParameterAdapter getActualParameterAdapter();
 
     public IParameterAdapter getExpectedParameterAdapter() {
-        return this.expectedParameterAdapter;
+        return this.expectedParameter;
     }
+
+    public IGuidanceResponseAdapter getExpectedGuidanceResponseAdapter() { return this.expectedGuidanceAdapter; }
 }
 
 

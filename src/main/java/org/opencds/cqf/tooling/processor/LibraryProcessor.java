@@ -3,9 +3,8 @@ package org.opencds.cqf.tooling.processor;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FilenameUtils;
 import org.fhir.ucum.UcumEssenceService;
@@ -19,16 +18,14 @@ import org.hl7.fhir.utilities.TextFile;
 import org.hl7.fhir.utilities.Utilities;
 import org.opencds.cqf.tooling.npm.LibraryLoader;
 import org.opencds.cqf.tooling.parameter.RefreshLibraryParameters;
-import org.opencds.cqf.tooling.utilities.IGUtils;
-import org.opencds.cqf.tooling.utilities.IOUtils;
+import org.opencds.cqf.tooling.utilities.*;
 import org.opencds.cqf.tooling.utilities.IOUtils.Encoding;
-import org.opencds.cqf.tooling.utilities.LogUtils;
-import org.opencds.cqf.tooling.utilities.ResourceUtils;
 
 import ca.uhn.fhir.context.FhirContext;
 
 public class LibraryProcessor extends BaseProcessor {
-    public static final String ResourcePrefix = "library-";   
+    public static final String ResourcePrefix = "library-";
+    public static final String LibraryTestGroupName = "library";
     public static String getId(String baseId) {
         return ResourcePrefix + baseId;
     }
@@ -231,6 +228,177 @@ public class LibraryProcessor extends BaseProcessor {
             }
         }
         return null;
+    }
+
+    public static void bundleTestLibraries(ArrayList<String> refreshedLibraryNames, String igPath, Boolean includeDependencies,
+                                      Boolean includeTerminology, Boolean includePatientScenarios, Boolean includeVersion, FhirContext fhirContext, String fhirUri,
+                                      Encoding encoding) {
+
+        List<String> refreshedTestLibraryNames = new ArrayList<String>();
+        refreshedTestLibraryNames.addAll(refreshedLibraryNames);
+
+        HashSet<String> planDefinitionSourcePaths = IOUtils.getPlanDefinitionPaths(fhirContext);
+
+        List<String> planDefinitionPathLibraryNames = new ArrayList<String>();
+        for (String planDefinitionSourcePath : planDefinitionSourcePaths) {
+            String name = FilenameUtils.getBaseName(planDefinitionSourcePath).replace(PlanDefinitionProcessor.ResourcePrefix, "");
+
+            planDefinitionPathLibraryNames.add(name);
+        }
+
+        HashSet<String> measureSourcePaths = IOUtils.getMeasurePaths(fhirContext);
+
+        List<String> measurePathLibraryNames = new ArrayList<String>();
+        for (String measureSourcePath : measureSourcePaths) {
+            String name = FilenameUtils.getBaseName(measureSourcePath).replace(MeasureProcessor.ResourcePrefix, "");
+
+            measurePathLibraryNames.add(name);
+        }
+
+        // Gather Test Libraries -- Refreshed Library Artifacts with test cases & no associated Measure or Plan Definition Artifacts.
+        for (String refreshedLibraryName : refreshedLibraryNames) {
+            String igTestCasePath = FilenameUtils.concat(FilenameUtils.concat(FilenameUtils.concat(igPath, IGProcessor.testCasePathElement), LibraryTestGroupName), refreshedLibraryName);
+            List<IBaseResource> testCaseResources = TestCaseProcessor.getTestCaseResources(igTestCasePath, fhirContext);
+
+            if (testCaseResources.isEmpty()) {
+                refreshedTestLibraryNames.remove(refreshedLibraryName);
+            }
+        }
+
+        // Process Test Libraries
+        List<String> bundledTestLibraries = new ArrayList<String>();
+        for (String refreshedTestLibraryName : refreshedTestLibraryNames) {
+            try {
+                Map<String, IBaseResource> resources = new HashMap<String, IBaseResource>();
+
+                String refreshedLibraryFileName = IOUtils.formatFileName(refreshedTestLibraryName, encoding, fhirContext);
+                String librarySourcePath;
+                try {
+                    librarySourcePath = IOUtils.getLibraryPathAssociatedWithCqlFileName(refreshedLibraryFileName, fhirContext);
+                } catch (Exception e) {
+                    LogUtils.putException(refreshedTestLibraryName, e);
+                    continue;
+                } finally {
+                    LogUtils.warn(refreshedTestLibraryName);
+                }
+
+                Boolean shouldPersist = true;
+                shouldPersist = shouldPersist
+                        & ResourceUtils.safeAddResource(librarySourcePath, resources, fhirContext);
+
+                String cqlFileName = IOUtils.formatFileName(refreshedTestLibraryName, Encoding.CQL, fhirContext);
+                List<String> cqlLibrarySourcePaths = IOUtils.getCqlLibraryPaths().stream()
+                        .filter(path -> path.endsWith(cqlFileName))
+                        .collect(Collectors.toList());
+                String cqlLibrarySourcePath = (cqlLibrarySourcePaths.isEmpty()) ? null : cqlLibrarySourcePaths.get(0);
+
+                if (includeTerminology) {
+                    boolean result = ValueSetsProcessor.bundleValueSets(cqlLibrarySourcePath, igPath, fhirContext, resources, encoding, includeDependencies, includeVersion);
+                    if (shouldPersist && !result) {
+                        LogUtils.info("Test Library will not be bundled because ValueSet bundling failed.");
+                    }
+                    shouldPersist = shouldPersist & result;
+                }
+
+                if (includeDependencies) {
+                    boolean result = LibraryProcessor.bundleLibraryDependencies(librarySourcePath, fhirContext, resources, encoding, includeVersion);
+                    if (shouldPersist && !result) {
+                        LogUtils.info("Test Library will not be bundled because Library Dependency bundling failed.");
+                    }
+                    shouldPersist = shouldPersist & result;
+                }
+
+                if (includePatientScenarios) {
+                    boolean result = TestCaseProcessor.bundleTestCases(igPath, LibraryTestGroupName, refreshedTestLibraryName, fhirContext, resources);
+                    if (shouldPersist && !result) {
+                        LogUtils.info("Test Library will not be bundled because Test Case bundling failed.");
+                    }
+                    shouldPersist = shouldPersist & result;
+                }
+
+                if (shouldPersist) {
+                    String bundleDestPath = FilenameUtils.concat(FilenameUtils.concat(IGProcessor.getBundlesPath(igPath), LibraryTestGroupName), refreshedTestLibraryName);
+                    persistBundle(igPath, bundleDestPath, refreshedTestLibraryName, encoding, fhirContext, new ArrayList<IBaseResource>(resources.values()), fhirUri);
+                    bundleFiles(igPath, bundleDestPath, refreshedTestLibraryName, librarySourcePath, fhirContext, encoding, includeTerminology, includeDependencies, includePatientScenarios, includeVersion);
+                    bundledTestLibraries.add(refreshedTestLibraryName);
+                }
+
+            } catch (Exception e) {
+                LogUtils.putException(refreshedTestLibraryName, e);
+            } finally {
+                LogUtils.warn(refreshedTestLibraryName);
+            }
+        }
+
+        String message = "\r\n" + bundledTestLibraries.size() + " Test Libraries successfully bundled:";
+        for (String bundledTestLibrary : bundledTestLibraries) {
+            message += "\r\n     " + bundledTestLibrary + " BUNDLED";
+        }
+
+        ArrayList<String> failedTestLibraries = new ArrayList<>(refreshedTestLibraryNames);
+        refreshedTestLibraryNames.removeAll(bundledTestLibraries);
+        refreshedTestLibraryNames.retainAll(refreshedTestLibraryNames);
+        message += "\r\n" + refreshedTestLibraryNames.size() + " Test Libraries refreshed, but not bundled (due to issues):";
+        for (String notBundled : refreshedTestLibraryNames) {
+            message += "\r\n     " + notBundled + " REFRESHED";
+        }
+
+        failedTestLibraries.removeAll(bundledTestLibraries);
+        failedTestLibraries.removeAll(refreshedTestLibraryNames);
+        message += "\r\n" + failedTestLibraries.size() + " Test Libraries failed refresh:";
+        for (String failed : failedTestLibraries) {
+            message += "\r\n     " + failed + " FAILED";
+        }
+
+        LogUtils.info(message);
+    }
+
+    private static void persistBundle(String igPath, String bundleDestPath, String libraryName, Encoding encoding, FhirContext fhirContext, List<IBaseResource> resources, String fhirUri) {
+        IOUtils.initializeDirectory(bundleDestPath);
+        Object bundle = BundleUtils.bundleArtifacts(libraryName, resources, fhirContext);
+        IOUtils.writeBundle(bundle, bundleDestPath, encoding, fhirContext);
+
+        BundleUtils.postBundle(encoding, fhirContext, fhirUri, (IBaseResource) bundle);
+    }
+
+    private static void bundleFiles(String igPath, String bundleDestPath, String libraryName, String librarySourcePath, FhirContext fhirContext, Encoding encoding, Boolean includeTerminology, Boolean includeDependencies, Boolean includePatientScenarios, Boolean includeVersion) {
+        String bundleDestFilesPath = FilenameUtils.concat(bundleDestPath, libraryName + "-" + IGBundleProcessor.bundleFilesPathElement);
+        IOUtils.initializeDirectory(bundleDestFilesPath);
+
+        IOUtils.copyFile(librarySourcePath, FilenameUtils.concat(bundleDestFilesPath, FilenameUtils.getName(librarySourcePath)));
+
+        String cqlFileName = IOUtils.formatFileName(libraryName, Encoding.CQL, fhirContext);
+        List<String> cqlLibrarySourcePaths = IOUtils.getCqlLibraryPaths().stream()
+                .filter(path -> path.endsWith(cqlFileName))
+                .collect(Collectors.toList());
+        String cqlLibrarySourcePath = (cqlLibrarySourcePaths.isEmpty()) ? null : cqlLibrarySourcePaths.get(0);
+        String cqlDestPath = FilenameUtils.concat(bundleDestFilesPath, cqlFileName);
+        IOUtils.copyFile(cqlLibrarySourcePath, cqlDestPath);
+
+        if (includeTerminology) {
+            try {
+                Map<String, IBaseResource> valuesets = ResourceUtils.getDepValueSetResources(cqlLibrarySourcePath, igPath, fhirContext, includeDependencies, includeVersion);
+                if (!valuesets.isEmpty()) {
+                    Object bundle = BundleUtils.bundleArtifacts(ValueSetsProcessor.getId(libraryName), new ArrayList<IBaseResource>(valuesets.values()), fhirContext);
+                    IOUtils.writeBundle(bundle, bundleDestFilesPath, encoding, fhirContext);
+                }
+            }  catch (Exception e) {
+                LogUtils.putException(libraryName, e.getMessage());
+            }
+        }
+
+        if (includeDependencies) {
+            Map<String, IBaseResource> depLibraries = ResourceUtils.getDepLibraryResources(librarySourcePath, fhirContext, encoding, includeVersion);
+            if (!depLibraries.isEmpty()) {
+                String depLibrariesID = "library-deps-" + libraryName;
+                Object bundle = BundleUtils.bundleArtifacts(depLibrariesID, new ArrayList<IBaseResource>(depLibraries.values()), fhirContext);
+                IOUtils.writeBundle(bundle, bundleDestFilesPath, encoding, fhirContext);
+            }
+        }
+
+        if (includePatientScenarios) {
+            TestCaseProcessor.bundleTestCaseFiles(igPath, "measure", libraryName, bundleDestFilesPath, fhirContext);
+        }
     }
 
     public List<String> refreshLibraryContent(RefreshLibraryParameters params) {

@@ -18,5 +18,7 @@ public class IGBundleProcessor {
 
         PlanDefinitionProcessor.bundlePlanDefinitions(refreshedLibraryNames, igPath, includeDependencies, includeTerminology, includePatientScenarios, versioned, cdsHooksIg,
                 fhirContext, fhirUri, encoding);
+
+        LibraryProcessor.bundleTestLibraries(refreshedLibraryNames, igPath, includeDependencies, includeTerminology, includePatientScenarios, versioned, fhirContext, fhirUri, encoding);
     }
 }

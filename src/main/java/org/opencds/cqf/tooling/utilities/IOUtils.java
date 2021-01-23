@@ -750,6 +750,13 @@ public class IOUtils
         }
         return planDefinitionPaths;
     }
+    private static Map<String, IBaseResource> planDefinitions = new LinkedHashMap<String, IBaseResource>();
+    public static Map<String, IBaseResource> getPlanDefinitions(FhirContext fhirContext) {
+        if (planDefinitions.isEmpty()) {
+            setupPlanDefinitionPaths(fhirContext);
+        }
+        return planDefinitions;
+    }
     private static void setupPlanDefinitionPaths(FhirContext fhirContext) {
         HashMap<String, IBaseResource> resources = new LinkedHashMap<String, IBaseResource>();
         for(String dir : resourceDirectories) {

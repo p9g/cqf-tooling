@@ -12,7 +12,7 @@ import org.opencds.cqf.tooling.common.BaseCqfmSoftwareSystemHelper;
 import org.opencds.cqf.tooling.common.CqfmSoftwareSystem;
 import org.opencds.cqf.tooling.measure.MeasureTestProcessor;
 import org.opencds.cqf.tooling.parameter.TestIGParameters;
-import org.opencds.cqf.tooling.plandefinition.PlanDefinitionTestProcessor;
+import org.opencds.cqf.tooling.library.LibraryTestProcessor;
 import org.opencds.cqf.tooling.utilities.*;
 
 import java.io.File;
@@ -299,9 +299,9 @@ public class IGTestProcessor extends BaseProcessor {
 
     private String getPathForContentBundleTestArtifact(String groupName, String testArtifactName) {
         String artifactGroupName = groupName;
-        if (artifactGroupName.endsWith("Tests")) {
-            artifactGroupName = artifactGroupName.substring(0, artifactGroupName.length() - "Tests".length());
-        }
+//        if (artifactGroupName.endsWith("Tests")) {
+//            artifactGroupName = artifactGroupName.substring(0, artifactGroupName.length() - "Tests".length());
+//        }
         String contentBundlePath = FilenameUtils.concat(FilenameUtils.concat(FilenameUtils.concat(getRootDir(), IGProcessor.bundlePathElement), artifactGroupName), testArtifactName);
         return contentBundlePath;
     }
@@ -315,11 +315,14 @@ public class IGTestProcessor extends BaseProcessor {
                 testProcessor = new MeasureTestProcessor(fhirContext);
                 break;
             case "plandefinition":
-                testProcessor = new PlanDefinitionTestProcessor(fhirContext);
+                System.out.println(String.format("No test processor implemented for resource type: %s", resourceTypeName));
+                break;
+            case "library":
+                testProcessor = new LibraryTestProcessor(fhirContext);
                 break;
             default:
                 // Currently unsupported/undocumented
-                System.out.println(String.format("No test processor implemented for resource type: $s", resourceTypeName));
+                System.out.println(String.format("No test processor implemented for resource type: %s", resourceTypeName));
                 break;
         }
 
