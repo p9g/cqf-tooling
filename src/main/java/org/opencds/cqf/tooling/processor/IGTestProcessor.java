@@ -217,7 +217,7 @@ public class IGTestProcessor extends BaseProcessor {
                         testCaseBundle.getIdElement().toString());
                     try {
                         System.out.println(String.format("      \tStarting processing of test case '%s' for %s: %s", testCaseBundle.getIdElement(), group.getName(), testArtifact.getName()));
-                        Parameters testResults = testProcessor.executeTest(testCaseBundle, testArtifactContentBundleMap.getValue(), params.fhirServerUri);
+                        Parameters testResults = testProcessor.executeTest(testCaseBundle, testArtifactContentBundleMap.getValue(), params);
 
                         Boolean testPassed = false;
                         for (ParametersParameter param : testResults.getParameter()) {

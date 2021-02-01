@@ -5,11 +5,13 @@ import org.apache.commons.lang.NotImplementedException;
 import org.hl7.fhir.DomainResource;
 import org.hl7.fhir.Parameters;
 import org.hl7.fhir.ParametersParameter;
+import org.hl7.fhir.instance.model.api.IBase;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.opencds.cqf.tooling.library.adapters.CqlEvaluatorLibraryTestAdapter;
 import org.opencds.cqf.tooling.library.adapters.IGuidanceResponseAdapter;
 import org.opencds.cqf.tooling.library.adapters.IParameterAdapter;
 import org.opencds.cqf.tooling.library.adapters.LibraryTestAdapter;
+import org.opencds.cqf.tooling.parameter.TestIGParameters;
 import org.opencds.cqf.tooling.processor.ITestProcessor;
 
 import java.io.File;
@@ -31,18 +33,20 @@ public class LibraryTestProcessor implements ITestProcessor {
 
     public Parameters executeTest(IBaseResource testBundle, IBaseResource contentBundle, String fhirServer)
     {
-        // Get the correct Testing Adapter
-        LibraryTestAdapter adapter = getLibraryTestAdapter(testBundle, contentBundle, fhirServer);
-        // Generate or get Guidance Response Resource
+        throw new NotImplementedException();
+    }
+
+    public Parameters executeTest(IBaseResource testBundle, IBaseResource contentBundle, TestIGParameters params)
+    {
+        LibraryTestAdapter adapter = getLibraryTestAdapter(testBundle, contentBundle, params);
+
         IGuidanceResponseAdapter expectedGuidanceResponseAdapter = adapter.getExpectedGuidanceResponseAdapter();
-        IBaseResource expectedGuidanceResponse = expectedGuidanceResponseAdapter.getGuidanceResponse();
+        IParameterAdapter expected = expectedGuidanceResponseAdapter.getExpectedParametersAdapter();
 
-        // Get the Input Parameters resource for the Test Case (from GR's input extension, throw error if does not exist)
-
-        // Generate a Output Parameters resource (using correct IParameterAdapter and executing it)
+        IParameterAdapter actual = adapter.getActualParameterAdapter();
 
         // Compare the Input and Output Parameter Resources
-//        MeasureReportComparer comparer = new MeasureReportComparer(this.fhirContext);
+//        ParametersComparer comparer = new ParametersComparer(this.fhirContext);
 
         // Log and Return results
 //        Parameters results = comparer.compare(actual, expected);
@@ -71,22 +75,22 @@ public class LibraryTestProcessor implements ITestProcessor {
         }
     }
 
-    public LibraryTestAdapter getLibraryTestAdapter(IBaseResource testBundle, IBaseResource contentBundle, String fhirServer) {
+    public LibraryTestAdapter getLibraryTestAdapter(IBaseResource testBundle, IBaseResource contentBundle, TestIGParameters params) {
         Objects.requireNonNull(testBundle, "            testBundle can not be null");
 
-        if ((fhirServer == null || fhirServer.trim().isEmpty()) && (contentBundle == null)) {
+        if ((params.fhirServerUri == null || params.fhirServerUri.trim().isEmpty()) && (contentBundle == null)) {
             throw new IllegalArgumentException("If fhirServer is not specified, contentBundle can not be null or empty.");
         }
 
-        if (fhirServer == null) {
-            return new CqlEvaluatorLibraryTestAdapter(this.fhirContext, testBundle, contentBundle);
+        if (params.fhirServerUri == null) {
+            return new CqlEvaluatorLibraryTestAdapter(this.fhirContext, testBundle, contentBundle, params);
         }
         else {
             throw new NotImplementedException();
         }
     }
 
-    public LibraryTestAdapter getLibraryTestAdapter(String testPath, String contentBundlePath, String fhirServer) {
+    public LibraryTestAdapter getLibraryTestAdapter(String testPath, String contentBundlePath, TestIGParameters params) {
         Objects.requireNonNull(testPath, "          testPath can not be null");
 
         File testFile = new File(testPath);
@@ -95,12 +99,12 @@ public class LibraryTestProcessor implements ITestProcessor {
             throw new IllegalArgumentException(String.format("          testPath file not found: %s", testPath));
         }
 
-        if ((fhirServer == null || fhirServer.trim().isEmpty()) && (contentBundlePath == null || contentBundlePath.trim().isEmpty())) {
+        if ((params.fhirServerUri == null || params.fhirServerUri.trim().isEmpty()) && (contentBundlePath == null || contentBundlePath.trim().isEmpty())) {
             throw new IllegalArgumentException("If fhirServer is not specified, contentBundlePath can not be null.");
         }
 
-        if (fhirServer == null) {
-            return new CqlEvaluatorLibraryTestAdapter(this.fhirContext, testPath, contentBundlePath);
+        if (params.fhirServerUri == null) {
+            return new CqlEvaluatorLibraryTestAdapter(this.fhirContext, testPath, contentBundlePath, params);
         }
         else {
             throw new NotImplementedException();

@@ -1,5 +1,8 @@
 package org.opencds.cqf.tooling.library.adapters;
 
-public class IParameterAdapter {
+import org.hl7.fhir.instance.model.api.IBaseResource;
 
+
+public interface IParameterAdapter {
+    IBaseResource getParameters();
 }

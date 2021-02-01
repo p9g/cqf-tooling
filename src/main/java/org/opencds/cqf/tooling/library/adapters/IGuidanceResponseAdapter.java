@@ -8,5 +8,7 @@ import java.util.List;
 public interface IGuidanceResponseAdapter {
     String getPatientId();
     String getGuidanceResponseId();
+    IBaseResource getSubject();
     IBaseResource getGuidanceResponse();
+    IParameterAdapter getExpectedParametersAdapter();
 }

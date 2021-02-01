@@ -14,6 +14,7 @@ import org.opencds.cqf.tooling.measure.comparer.MeasureReportComparer;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import org.opencds.cqf.tooling.parameter.TestIGParameters;
 import org.opencds.cqf.tooling.processor.ITestProcessor;
 
 public class MeasureTestProcessor implements ITestProcessor {
@@ -41,9 +42,41 @@ public class MeasureTestProcessor implements ITestProcessor {
         return results;
     }
 
+    public Parameters executeTest(String testPath, String contentBundlePath, TestIGParameters params)
+    {
+        MeasureTestAdapter adapter = getMeasureTestAdapter(testPath, contentBundlePath, params.fhirServerUri);
+        MeasureReportComparer comparer = new MeasureReportComparer(this.fhirContext);
+
+        IMeasureReportAdapter expected = adapter.getExpectedMeasureReportAdapter();
+        String measureId = expected.getMeasureId();
+        System.out.println("            Testing Measure '" + measureId + "'");
+
+        IMeasureReportAdapter actual = adapter.getActualMeasureReportAdapter();
+
+        Parameters results = comparer.compare(actual, expected);
+        logTestResults(measureId, results);
+        return results;
+    }
+
     public Parameters executeTest(IBaseResource testBundle, IBaseResource contentBundle, String fhirServer)
     {
         MeasureTestAdapter adapter = getMeasureTestAdapter(testBundle, contentBundle, fhirServer);
+        MeasureReportComparer comparer = new MeasureReportComparer(this.fhirContext);
+
+        IMeasureReportAdapter expected = adapter.getExpectedMeasureReportAdapter();
+        String measureId = expected.getMeasureId();
+        System.out.println("            Testing Measure '" + measureId + "'");
+
+        IMeasureReportAdapter actual = adapter.getActualMeasureReportAdapter();
+
+        Parameters results = comparer.compare(actual, expected);
+        logTestResults(measureId, results);
+        return results;
+    }
+
+    public Parameters executeTest(IBaseResource testBundle, IBaseResource contentBundle, TestIGParameters params)
+    {
+        MeasureTestAdapter adapter = getMeasureTestAdapter(testBundle, contentBundle, params.fhirServerUri);
         MeasureReportComparer comparer = new MeasureReportComparer(this.fhirContext);
 
         IMeasureReportAdapter expected = adapter.getExpectedMeasureReportAdapter();

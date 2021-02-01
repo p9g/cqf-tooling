@@ -2,10 +2,12 @@ package org.opencds.cqf.tooling.library.adapters;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.FhirVersionEnum;
+import ca.uhn.fhir.rest.server.exceptions.NotImplementedOperationException;
 import ca.uhn.fhir.util.BundleUtil;
 import org.apache.commons.lang.NotImplementedException;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.opencds.cqf.tooling.parameter.TestIGParameters;
 import org.opencds.cqf.tooling.utilities.IOUtils;
 
 import java.util.List;
@@ -17,11 +19,10 @@ public abstract class LibraryTestAdapter {
     protected FhirContext fhirContext;
     protected IBaseResource testBundle;
     protected IGuidanceResponseAdapter expectedGuidanceAdapter;
-    protected IParameterAdapter expectedParameter;
-    protected IParameterAdapter actualParameter;
-    protected IBaseResource expectedGuidanceResponse;
+    private IBaseResource expectedGuidanceResponse;
+    protected TestIGParameters params;
 
-    public LibraryTestAdapter(FhirContext fhirContext, String testPath) {
+    public LibraryTestAdapter(FhirContext fhirContext, String testPath, TestIGParameters params) {
         this.fhirContext = Objects.requireNonNull(fhirContext, "fhirContext can not be null.");
         Objects.requireNonNull(testPath, "testPath can not be null.");
 
@@ -33,14 +34,16 @@ public abstract class LibraryTestAdapter {
 
         validateTestBundle();
         this.expectedGuidanceAdapter = getGuidanceResponseAdapter(this.expectedGuidanceResponse);
+        this.params = params;
     }
 
-    public LibraryTestAdapter(FhirContext fhirContext, IBaseResource testBundle) {
+    public LibraryTestAdapter(FhirContext fhirContext, IBaseResource testBundle, TestIGParameters params) {
         this.fhirContext = Objects.requireNonNull(fhirContext, "fhirContext can not be null.");
         this.testBundle = Objects.requireNonNull(testBundle, "testBundle can not be null.");
 
         validateTestBundle();
         this.expectedGuidanceAdapter = getGuidanceResponseAdapter(this.expectedGuidanceResponse);
+        this.params = params;
     }
 
     protected IGuidanceResponseAdapter getGuidanceResponseAdapter(IBaseResource guidanceResponse) {
@@ -74,7 +77,7 @@ public abstract class LibraryTestAdapter {
         // Get Expected Result GR
         if (guidanceResponses == null || guidanceResponses.size() == 0) {
 
-            // Expected Result GR does not exist. Generate it.
+            // Expected Result GR does not exist. Generate it based on FHIR Context.
         }
         else {
             this.expectedGuidanceResponse = guidanceResponses.get(0);
@@ -85,8 +88,9 @@ public abstract class LibraryTestAdapter {
 
     public abstract IParameterAdapter getActualParameterAdapter();
 
+    // Moved to GR Adapter.
     public IParameterAdapter getExpectedParameterAdapter() {
-        return this.expectedParameter;
+        throw new NotImplementedException();
     }
 
     public IGuidanceResponseAdapter getExpectedGuidanceResponseAdapter() { return this.expectedGuidanceAdapter; }
