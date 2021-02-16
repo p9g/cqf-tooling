@@ -18,7 +18,7 @@ public class ResourceValidator extends Operation {
 
     private String resourcePath; // -resourcePath (-rp) directory to get resource(s) to evaluate
     private String profilePath = "";  // -profilePath (-pp)  directory and file path or url to get profile to validate against
-    // -outputPath (-op)  directory on where to write returned results of validation, including file name.
+    private String outputPath;  // -outputPath (-op)  directory on where to write returned results of validation, including file name.
     private String jarPath;  // -jarPath (-jp)  path to validator_cli.jar
     private String fhirVersion = "4.0.1"; // will default to fhir 4.0.1
     private String igLocation; //Location for an IG to run against or a single profile file
@@ -34,7 +34,7 @@ public class ResourceValidator extends Operation {
 
     @Override
     public void execute(String[] args) {
-        setOutputPath("src/main/resources/org/opencds/cqf/tooling/acceleratorkit/output"); // default
+        setOutputPath("src/main/resources/org/opencds/cqf/tooling/output"); // default
         for (String arg : args) {
             if (arg.equals("-ValidateResource")) continue;
             String[] flagAndValue = arg.split("=");
@@ -44,7 +44,7 @@ public class ResourceValidator extends Operation {
             String flag = flagAndValue[0];
             String value = flagAndValue[1];
             switch (flag.replace("-", "").toLowerCase()) {
-                case "outputpath": case "op": setOutputPath(value); break; // -outputpath (-op)
+                case "outputpath": case "op": outputPath = value; break; // -outputpath (-op)
                 case "profilePath": case "pp": handleProfilePath(value); break; // -profilePath (-pp) may be url
                 case "ig": igLocation = value; break;
                 case "resourcePath": case "rp": resourcePath = Paths.get(value).toAbsolutePath().toString(); break; // -resourcePath (-rp)
@@ -78,7 +78,6 @@ public class ResourceValidator extends Operation {
         List<String> validationResults = new ArrayList<String >();
         SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
         Date date = new Date(System.currentTimeMillis());
-        System.out.println(formatter.format(date));
         validationResults.add(String.format("Validation Results from : " + formatter.format(date)));
         for (File file : new File(resourcePath).listFiles()) {
             if (file.getName().endsWith(".json") || file.getName().endsWith(".xml")) {
@@ -98,12 +97,16 @@ public class ResourceValidator extends Operation {
     }
 
     private void recordResults(List<String> validationResults) {
-        File resultsFile = new File(getOutputPath());
+        String fileToWrite = outputPath;
+        if(null == fileToWrite || fileToWrite.length() < 1){
+            fileToWrite = getOutputPath() + File.separator + "ResourceValidatorOutput.log";
+        }
+        File resultsFile = new File(fileToWrite);
         if(!resultsFile.exists()){
             try {
                 resultsFile.createNewFile();
             } catch (IOException e) {
-                System.out.println("File " + getOutputPath() + " could not be created. Check permissions.");
+                System.out.println("File " + fileToWrite + " could not be created. Check permissions.");
                 e.printStackTrace();
             }
         }
