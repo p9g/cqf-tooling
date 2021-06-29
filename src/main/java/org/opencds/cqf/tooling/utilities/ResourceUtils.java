@@ -193,17 +193,20 @@ public class ResourceUtils
       List<org.hl7.fhir.r4.model.RelatedArtifact> relatedArtifacts = getR4RelatedArtifacts(path, fhirContext);
       for (org.hl7.fhir.r4.model.RelatedArtifact relatedArtifact : relatedArtifacts) {
           if (relatedArtifact.getType() == org.hl7.fhir.r4.model.RelatedArtifact.RelatedArtifactType.DEPENDSON) {
-              if (relatedArtifact.getResource().contains("Library/")) {
-            	  String dependencyLibraryName;
+              if (relatedArtifact.getResource() != null && relatedArtifact.getResource().contains("Library/")) {
+                  String dependencyLibraryName;
                   // Issue 96 - Do not include version number in the filename
                   if (versioned) {
-                	  dependencyLibraryName = IOUtils.formatFileName(relatedArtifact.getResource().split("Library/")[1].replaceAll("\\|", "-"), encoding, fhirContext);
+                      dependencyLibraryName = IOUtils.formatFileName(relatedArtifact.getResource().split("Library/")[1].replaceAll("\\|", "-"), encoding, fhirContext);
                   } else {
-                	  String name = relatedArtifact.getResource().split("Library/")[1];
-                	  dependencyLibraryName = IOUtils.formatFileName(name.split("\\|")[0], encoding, fhirContext);
+                      String name = relatedArtifact.getResource().split("Library/")[1];
+                      dependencyLibraryName = IOUtils.formatFileName(name.split("\\|")[0], encoding, fhirContext);
                   }
                   String dependencyLibraryPath = FilenameUtils.concat(directoryPath, dependencyLibraryName);
                   IOUtils.putInListIfAbsent(dependencyLibraryPath, paths);
+              }
+              else if(null == relatedArtifact.getResource()){
+                  System.out.println(String.format("WARNING: RelatedArtifact.getResource() returns null in: '%s'", path));
               }
           }
       }
