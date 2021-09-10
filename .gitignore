@@ -122,6 +122,8 @@ hs_err_pid*
 /src/main/resources/org/opencds/cqf/tooling/measure/output/stu3/*
 !/src/main/resources/org/opencds/cqf/tooling/measure/output/stu3/.gitkeep
 
+/src/test/java/org/opencds/cqf/tooling/output/*
+
 *.iml
 .classpath
 .project

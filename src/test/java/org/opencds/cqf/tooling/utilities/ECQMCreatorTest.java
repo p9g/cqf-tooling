@@ -5,6 +5,7 @@ import static org.testng.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,11 +73,14 @@ public class ECQMCreatorTest {
 
         System.out.println("Testing " + matBundleName + " " + measureLibraryName);
 
+        Boolean outputMeasure2File = true; 
+
         ExtractMatBundleOperation o = new ExtractMatBundleOperation();
         o.execute(new String[] { "-ExtractMATBundle", this.getClass().getResource("ecqm-content-r4-2021/bundles/" + matBundleName).getFile() });
 
         try {
             Measure measure = refreshMeasure("ecqm-content-r4-2021/input/cql/" + measureLibraryName +".cql", "ecqm-content-r4-2021/input/resources/measure/"+ measureLibraryName +".json");
+
             assertTrue(null != measure);
             // Extract data requirements from the measure:
             List<DataRequirement> drs = new ArrayList<DataRequirement>();
@@ -85,9 +89,18 @@ public class ECQMCreatorTest {
                     drs.add(e.getValueDataRequirement());
                 }
             }
+
+            String measString = measureToString(measure);
+
+            if (outputMeasure2File){
+                try (PrintWriter measWriter = new PrintWriter("./src/test/java/org/opencds/cqf/tooling/output/"+"post_processed_" + matBundleName);) {
+                    measWriter.println(measString);
+                }
+            }
+            
             assertTrue(!drs.isEmpty());
             // TODO: Measure-specific validation of data requirements content
-            logger.debug(measureToString(measure));
+            logger.debug(measString);
         }
         catch (IOException ioException) {
             ioException.printStackTrace();
