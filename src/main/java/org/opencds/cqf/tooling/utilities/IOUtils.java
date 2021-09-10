@@ -222,6 +222,10 @@ public class IOUtils
             IParser parser = getParser(encoding, fhirContext);
             File file = new File(path);
 
+            if (file.exists() && file.isDirectory()) {
+                throw new IllegalArgumentException(String.format("Cannot read a resource from a directory: %s", path));
+            }
+
             // if (!file.exists()) {
             //     String[] paths = file.getParent().split("\\\\");
             //     file = new File(Paths.get(file.getParent(), paths[paths.length - 1] + "-" + file.getName()).toString());
@@ -237,9 +241,16 @@ public class IOUtils
         }
         catch (Exception e)
         {
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(String.format("Error reading resource from path %s: %s", path, e.getMessage()), e);
         }
         return resource;
+    }
+
+    public static void updateCachedResource(IBaseResource updatedResource, String path){
+        if(null != cachedResources.get(path)){
+            cachedResources.put(path, updatedResource);
+        }
+
     }
 
     public static List<IBaseResource> readResources(List<String> paths, FhirContext fhirContext) 
@@ -275,7 +286,7 @@ public class IOUtils
         return filePaths;
     }
 
-    public static String getResourceFileName(String resourcePath, IBaseResource resource, Encoding encoding, FhirContext fhirContext, boolean versioned) {
+    public static String getResourceFileName(String resourcePath, IBaseResource resource, Encoding encoding, FhirContext fhirContext, boolean versioned, boolean prefixed) {
         String resourceVersion = IOUtils.getCanonicalResourceVersion(resource, fhirContext);
         String filename = resource.getIdElement().getIdPart();
         // Issue 96
@@ -291,8 +302,12 @@ public class IOUtils
                 filename = filename + "-" + resourceVersion;
             }
         }
+
+        String resourceType = resource.fhirType().toLowerCase();
+        // Cannot read from here it isn't always set
+        //String resourceType = resource.getIdElement().getResourceType().toLowerCase();
         
-        String result = Paths.get(resourcePath, resource.getIdElement().getResourceType().toLowerCase(), filename) + getFileExtension(encoding);
+        String result = Paths.get(resourcePath, resourceType, (prefixed ? (resourceType + "-") : "") + filename) + getFileExtension(encoding);
         return result;
     }
 
