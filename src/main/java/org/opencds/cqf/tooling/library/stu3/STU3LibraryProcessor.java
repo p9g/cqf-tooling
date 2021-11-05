@@ -84,7 +84,8 @@ public class STU3LibraryProcessor extends LibraryProcessor {
     }
 
     private void cleanseRelatedArtifactReferences(Library library) {
-        List<String> unresolvableCodeSystems = Arrays.asList("http://loinc.org", "http://snomed.info/sct");
+        List<String> unresolvableCodeSystems = Arrays.asList("http://loinc.org", "http://snomed.info/sct", "http://snomed.info/sct/731000124108",
+                "http://hl7.org/fhir/v3/RoleCode", "http://hl7.org/fhir/diagnosis-role", "http://hl7.org/fhir/request-intent");
         List<RelatedArtifact> relatedArtifacts = library.getRelatedArtifact();
         relatedArtifacts.removeIf(ra -> ra.hasResource() && ra.getResource().hasReference() && unresolvableCodeSystems.contains(ra.getResource().getReference()));
 
